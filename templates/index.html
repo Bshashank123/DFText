@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Handwriting Forensics System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .upload-zone {
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            padding: 50px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .upload-zone:hover {
+            border-color: #667eea;
+            background-color: #f8f9fa;
+        }
+        .upload-zone.dragover {
+            border-color: #764ba2;
+            background-color: #e9ecef;
+        }
+        .score-bar {
+            height: 25px;
+            border-radius: 12px;
+            background-color: #e9ecef;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .score-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .verdict-badge {
+            font-size: 24px;
+            padding: 15px 30px;
+            border-radius: 10px;
+        }
+        .finding-card {
+            border-left: 4px solid;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .finding-card.high { border-left-color: #dc3545; background-color: #f8d7da; }
+        .finding-card.medium { border-left-color: #ffc107; background-color: #fff3cd; }
+        .finding-card.low { border-left-color: #28a745; background-color: #d4edda; }
+        #preview-img {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .spinner-border {
+            width: 50px;
+            height: 50px;
+        }
+        .progress-text {
+            margin-top: 15px;
+            font-weight: 500;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="text-center text-white mb-4">
+            <h1 class="display-4 fw-bold">AI Handwriting Forensics System</h1>
+            <p class="lead">Multi-domain forensic analysis for AI-assisted document detection</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Upload Document</h4>
+                        
+                        <div class="upload-zone" id="upload-zone">
+                            <input type="file" id="file-input" accept="image/*" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-cloud-upload mb-3 text-muted" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>
+                                <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
+                            </svg>
+                            <p class="mb-1">Click to upload or drag and drop</p>
+                            <small class="text-muted">PNG, JPG, JPEG up to 10MB</small>
+                        </div>
+
+                        <img id="preview-img" style="display: none;">
+
+                        <button id="analyze-btn" class="btn btn-primary w-100 mt-3" style="display: none;">
+                            Run Forensic Analysis
+                        </button>
+
+                        <div id="loading" style="display: none;" class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="progress-text" id="progress-text">Analyzing...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Analysis Results</h4>
+                        
+                        <div id="no-results" class="text-center text-muted py-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-graph-up mb-3" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/>
+                            </svg>
+                            <p>Upload an image to begin analysis</p>
+                        </div>
+
+                        <div id="results" style="display: none;">
+                            <div class="text-center mb-4">
+                                <span id="verdict-badge" class="verdict-badge badge"></span>
+                                <p class="mt-2 mb-0"><strong>Confidence:</strong> <span id="confidence">0</span>%</p>
+                            </div>
+
+                            <h5 class="mt-4 mb-3">Module Scores</h5>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Stylometry (Writing Behavior)</label>
+                                <div class="score-bar">
+                                    <div class="score-fill" id="score-stylometry" style="width: 0%; background: #9c27b0;"></div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">AI Text Probability</label>
+                                <div class="score-bar">
+                                    <div class="score-fill" id="score-aitext" style="width: 0%; background: #2196f3;"></div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Image Forensics</label>
+                                <div class="score-bar">
+                                    <div class="score-fill" id="score-image" style="width: 0%; background: #f44336;"></div>
+                                </div>
+                            </div>
+
+                            <div class="ms-4">
+                                <div class="mb-2">
+                                    <label class="form-label small">└ Noise Pattern</label>
+                                    <div class="score-bar">
+                                        <div class="score-fill" id="score-noise" style="width: 0%; background: #ef9a9a;"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">└ Stroke Texture</label>
+                                    <div class="score-bar">
+                                        <div class="score-fill" id="score-stroke" style="width: 0%; background: #ef9a9a;"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small">└ Paper Texture</label>
+                                    <div class="score-bar">
+                                        <div class="score-fill" id="score-paper" style="width: 0%; background: #ef9a9a;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="mt-4 mb-3">Key Findings</h5>
+                            <div id="findings-container"></div>
+
+                            <div class="mt-4 p-3 bg-light rounded">
+                                <small class="font-monospace" id="technical-info"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const previewImg = document.getElementById('preview-img');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loading = document.getElementById('loading');
+        const progressText = document.getElementById('progress-text');
+        const noResults = document.getElementById('no-results');
+        const results = document.getElementById('results');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                    analyzeBtn.style.display = 'block';
+                    results.style.display = 'none';
+                    noResults.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        analyzeBtn.addEventListener('click', analyzeImage);
+
+        async function analyzeImage() {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            noResults.style.display = 'none';
+
+            const progressSteps = [
+                'Preprocessing image...',
+                'Analyzing noise patterns...',
+                'Analyzing stroke textures...',
+                'Extracting text via OCR...',
+                'Analyzing writing behavior...',
+                'Running AI text detection...',
+                'Computing final verdict...'
+            ];
+
+            let step = 0;
+            const progressInterval = setInterval(() => {
+                if (step < progressSteps.length) {
+                    progressText.textContent = progressSteps[step];
+                    step++;
+                }
+            }, 1200);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                    return;
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                clearInterval(progressInterval);
+                alert('Analysis failed: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const verdictBadge = document.getElementById('verdict-badge');
+            const confidence = document.getElementById('confidence');
+
+            verdictBadge.textContent = data.verdict;
+            confidence.textContent = data.confidence;
+
+            if (data.verdict === 'Likely Human') {
+                verdictBadge.className = 'verdict-badge badge bg-success';
+            } else if (data.verdict === 'Suspicious') {
+                verdictBadge.className = 'verdict-badge badge bg-warning';
+            } else {
+                verdictBadge.className = 'verdict-badge badge bg-danger';
+            }
+
+            setScore('stylometry', data.scores.stylometry);
+            setScore('aitext', data.scores.ai_text);
+            setScore('image', data.scores.image_forensics);
+            setScore('noise', data.scores.noise);
+            setScore('stroke', data.scores.stroke);
+            setScore('paper', data.scores.paper);
+
+            displayFindings(data.explanation.findings);
+            displayTechnical(data.explanation.technical_summary);
+
+            noResults.style.display = 'none';
+            results.style.display = 'block';
+        }
+
+        function setScore(id, value) {
+            const element = document.getElementById('score-' + id);
+            const percent = Math.round(value * 100);
+            setTimeout(() => {
+                element.style.width = percent + '%';
+                element.textContent = percent + '%';
+            }, 100);
+        }
+
+        function displayFindings(findings) {
+            const container = document.getElementById('findings-container');
+            container.innerHTML = '';
+
+            findings.forEach(finding => {
+                const card = document.createElement('div');
+                card.className = 'finding-card ' + finding.severity;
+                card.innerHTML = `
+                    <strong>${finding.finding}</strong>
+                    <p class="mb-0 mt-2 small">${finding.detail}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function displayTechnical(tech) {
+            const element = document.getElementById('technical-info');
+            element.innerHTML = `
+                Final Score: ${tech.final_score}<br>
+                Formula: ${tech.fusion_formula}
+            `;
+        }
+    </script>
+</body>
+</html>

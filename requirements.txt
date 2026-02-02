@@ -1,0 +1,10 @@
+Flask==2.3.3
+Werkzeug==2.3.7
+opencv-python==4.8.0.76
+Pillow==10.0.0
+pytesseract==0.3.10
+numpy==1.24.3
+scipy==1.11.2
+nltk==3.8.1
+transformers==4.33.2
+torch==2.0.1
