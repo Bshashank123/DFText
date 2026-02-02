@@ -8,7 +8,8 @@ Usage:
 
 import sys
 import os
-import cv2
+
+
 import json
 
 from pipeline.preprocess import preprocess_image

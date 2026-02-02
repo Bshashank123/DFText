@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+venv310/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+uploads/*
+!uploads/.gitkeep
+logs/*
+!logs/.gitkeep
+user_feedback/*.json
+plots/*.png
+
+# Secrets
+.env
+*.key
+*.pem
+config_secret.py
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+Thumbs.db
